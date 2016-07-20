@@ -337,7 +337,7 @@ class GreenSocket(object):
                 elif get_errno(e) in SOCKET_CLOSED:
                     return b''
                 else:
-                    raise
+                    pass
 
             try:
                 self._read_trampoline()
@@ -366,7 +366,7 @@ class GreenSocket(object):
             except socket.error as e:
                 eno = get_errno(e)
                 if eno == errno.ENOTCONN or eno not in SOCKET_BLOCKING:
-                    raise
+                    raise socket.error(errno.ECONNRESET, 'Connection already closed.')
 
             try:
                 self._trampoline(self.fd, write=True, timeout=self.gettimeout(),
@@ -375,18 +375,10 @@ class GreenSocket(object):
                 raise socket.error(errno.ECONNRESET, 'Connection closed by another thread')
 
     def send(self, data, flags=0):
-        try:
-            res=self._send_loop(self.fd.send, data, flags)
-        except:
-            res=len(data)
-        return res
+        return self._send_loop(self.fd.send, data, flags)
 
     def sendto(self, data, *args):
-        try:
-            res=self._send_loop(self.fd.sendto, data, *args)
-        except:
-            res=len(data)
-        return res
+        return self._send_loop(self.fd.sendto, data, *args)
 
     def sendall(self, data, flags=0):
         tail = self.send(data, flags)
